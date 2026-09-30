@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0b0f14">
+<title>Proyecto importación · V20 · Panel interno</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body data-auth-page="admin">
+<div id="authGate" class="auth-card" style="max-width:520px;margin:70px auto;background:#111821;border:1px solid #26323e;border-radius:18px;padding:24px"><h1>Panel interno</h1><p class="muted">Acceso exclusivo para administrador/personal autorizado.</p><p id="authMode" class="muted"></p><div class="cloud-only"><form id="loginForm"><label>Email</label><input id="loginEmail" type="email" required><label>Contraseña</label><input id="loginPassword" type="password" required><div class="toolbar"><button type="submit">Entrar</button></div><p id="loginError" class="bad"></p></form></div><div class="local-only hidden"><p>La nube todavía no está configurada. Este acceso es solo de desarrollo local y no es seguridad real.</p><button id="enterLocal">Entrar en modo local</button></div></div>
+<div id="privateApp" class="hidden"><div style="max-width:1400px;margin:12px auto 0;padding:0 20px;display:flex;justify-content:flex-end;gap:10px;align-items:center"><span class="muted">Admin: <b data-user-email></b></span><a class="secondary" style="text-decoration:none;padding:10px 14px;border-radius:10px" href="index.html?public=1">Ver simulador público</a><button id="logoutBtn" class="secondary cloud-only">Cerrar sesión</button></div>
+<div class="wrap">
+  <header class="hero">
+    <div>
+      <h1>Vehículos por encargo</h1>
+      <p>El cliente pide un coche, validamos presupuesto y riesgo, protegemos tu beneficio y generamos una propuesta profesional con señal, pagos y seguimiento.</p>
+    </div>
+    <div class="badge">V20 · Admin inteligente + nube real</div>
+  </header>
+
+
+  <section class="panel crm-panel">
+    <div class="section-head">
+      <div><h2>Panel de clientes y encargos</h2><p class="muted">Gestiona varios encargos a la vez. Cada ficha guarda cliente, búsqueda, propuesta, pagos y estado.</p></div>
+      <span class="status-pill live">V20 · CRM + nube real</span>
+    </div>
+    <div id="crmSummary" class="summary crm-summary"></div>
+    <div class="toolbar">
+      <button id="newOrderRecord">Nuevo encargo</button>
+      <button id="saveOrderRecord" class="secondary">Guardar / actualizar ficha</button>
+    </div>
+    <div class="crm-search"><input id="crmSearch" placeholder="Buscar por cliente, referencia o coche..."></div>
+    <div id="crmList" class="crm-list"></div>
+  </section>
+
+  <section class="panel cloud-panel">
+    <div class="section-head"><div><h2>Nube y documentos</h2><p class="muted">Sincroniza los encargos con Supabase. Los documentos se guardan en un bucket privado.</p></div><span class="status-pill live">V20 · Supabase</span></div>
+    <div class="toolbar"><button id="cloudSyncPush">Sincronizar a nube</button><button id="cloudSyncPull" class="secondary">Cargar desde nube</button></div>
+    <div class="grid compact" style="margin-top:12px"><div><label>Tipo de documento</label><select id="cloudDocumentKind"><option value="contrato">Contrato</option><option value="pago">Justificante de pago</option><option value="vehiculo">Documentación vehículo</option><option value="vin">Informe VIN</option><option value="otro">Otro</option></select></div><div><label>Archivo</label><input id="cloudDocumentFile" type="file"></div><div><label>Visible para el cliente</label><label style="display:flex;gap:8px;align-items:center;margin-top:12px"><input id="cloudDocumentVisible" type="checkbox" style="width:auto"> Compartir con cliente</label></div></div>
+    <div class="toolbar"><button id="cloudDocumentUpload" class="secondary">Subir documento al encargo abierto</button></div>
+    <p id="cloudSyncStatus" class="micro"></p>
+  </section>
+
+  <section class="panel order-panel">
+    <div class="section-head">
+      <div><h2>1. Encargo del cliente</h2><p class="muted">El presupuesto se entiende como máximo final puesto en España. La app no lo usa automáticamente como precio de venta.</p></div>
+      <span class="status-pill live">Modelo por encargo</span>
+    </div>
+    <div class="grid">
+      <div><label>Cliente / referencia</label><input id="orderClient" placeholder="Ej. Carlos G."></div>
+      <div><label>Teléfono</label><input id="orderPhone" placeholder="Ej. +34 600 000 000"></div>
+      <div><label>Email</label><input id="orderEmail" type="email" placeholder="cliente@email.com"></div>
+      <div><label>N.º de encargo</label><input id="orderRef" placeholder="Ej. A5-001"></div>
+      <div><label>Marca / modelo solicitado</label><input id="orderQ" value="Audi A5" placeholder="Ej. Audi A5"></div>
+      <div><label>Presupuesto máximo final</label><input id="orderBudget" type="number" value="25000"></div>
+      <div><label>Beneficio mínimo protegido</label><input id="orderMinProfit" type="number" value="1500"></div>
+      <div><label>Beneficio objetivo</label><input id="orderTargetProfit" type="number" value="2500"></div>
+      <div><label>Colchón operativo extra</label><input id="orderBuffer" type="number" value="400"></div>
+      <div><label>Estado del encargo</label><select id="orderStatus"></select></div>
+      <div><label>Año mínimo</label><input id="minYear" type="number" value="2018"></div>
+      <div><label>Kilómetros máximos</label><input id="maxKm" type="number" value="140000"></div>
+      <div><label>Combustible</label><select id="fuel"><option value="">Cualquiera</option><option>Gasolina</option><option>Diésel</option><option>Híbrido</option><option>Eléctrico</option></select></div>
+      <div><label>Cambio</label><select id="gear"><option value="">Cualquiera</option><option>Automático</option><option>Manual</option></select></div>
+      <div><label>Carrocería</label><select id="body"><option value="">Cualquiera</option><option>Compacto</option><option>Berlina</option><option>Familiar</option><option>SUV</option><option>Coupé</option><option>Descapotable</option></select></div>
+      <div><label>Vendedor</label><select id="seller"><option value="">Cualquiera</option><option>Profesional</option><option>Particular</option></select></div>
+      <div><label>Riesgo máximo</label><select id="maxRisk"><option value="4">Cualquiera</option><option value="1">Solo bajo</option><option value="2" selected>Hasta medio</option><option value="3">Hasta alto</option></select></div>
+      <div><label>País origen</label><select id="country"><option value="DE">Alemania</option><option value="BE" disabled>Bélgica · próximamente</option><option value="NL" disabled>Países Bajos · próximamente</option><option value="FR" disabled>Francia · próximamente</option><option value="IT" disabled>Italia · próximamente</option><option value="AT" disabled>Austria · próximamente</option><option value="LU" disabled>Luxemburgo · próximamente</option></select></div>
+      <div class="wide"><label>Equipamiento / condiciones obligatorias</label><input id="orderEquipment" placeholder="Ej. S line, techo, cámara, sin golpes estructurales..."></div>
+      <div class="wide"><label>Notas internas (el cliente no las ve)</label><textarea id="orderInternalNotes" rows="3" placeholder="Preferencias, llamadas, observaciones, próximos pasos..."></textarea></div>
+    </div>
+    <div class="toolbar"><button id="analyzeOrder">Validar encargo y buscar candidatos</button><button id="saveOrder" class="secondary">Guardar encargo</button></div>
+    <div id="orderAssessment" class="order-assessment"></div>
+  </section>
+
+  <section class="panel workflow-panel">
+    <div class="section-head"><div><h2>2. Flujo del encargo</h2><p class="muted">Seguimiento desde la petición hasta la entrega.</p></div><span class="status-pill pending">Seguimiento V20</span></div>
+    <div id="workflow" class="workflow"></div>
+  </section>
+
+  <section class="panel source-panel">
+    <div class="section-head"><div><h2>Fuentes de datos</h2><p class="muted">Arquitectura multi-país y multi-plataforma. Los conectores reales se activarán al recibir credenciales.</p></div><div class="legend"><span class="dot demo"></span> Demo <span class="dot pending"></span> Pendiente <span class="dot live"></span> Real</div></div>
+    <div id="sourceCards" class="source-grid"></div>
+  </section>
+
+  <div id="summary" class="summary"></div>
+  <main id="results"></main>
+
+
+  <section class="panel proposal-panel" id="proposalPanel">
+    <div class="section-head"><div><h2>3. Propuesta al cliente</h2><p class="muted">Tu margen permanece en el panel interno. La vista cliente solo muestra el precio final, la forma de pago, lo incluido y el estado económico.</p></div><span class="status-pill live">Vista cliente separada</span></div>
+    <div class="grid">
+      <div><label>Vehículo seleccionado</label><select id="proposalCar"></select></div>
+      <div><label>Cliente</label><input id="proposalClient" placeholder="Nombre / referencia"></div>
+      <div><label>Contacto</label><input id="proposalContact" placeholder="Teléfono o email"></div>
+      <div><label>Estado propuesta</label><select id="proposalStatus"></select></div>
+      <div><label>Precio final al cliente</label><input id="proposalFinalPrice" type="number"></div>
+      <div><label>Tipo de señal</label><select id="proposalDepositMode"><option value="fixed">Importe fijo</option><option value="percent">Porcentaje</option></select></div>
+      <div><label>Señal / reserva</label><input id="proposalDepositValue" type="number" value="2500"></div>
+      <div><label>Validez propuesta</label><input id="proposalValidity" value="7 días"></div>
+      <div class="wide"><label>Entrega estimada</label><input id="proposalDelivery" value="Entrega estimada tras compra, transporte y matriculación"></div>
+      <div class="wide"><label>Qué incluye el precio</label><textarea id="proposalIncludes" rows="3"></textarea></div>
+      <div class="wide"><label>Notas / condiciones</label><textarea id="proposalNotes" rows="3"></textarea></div>
+    </div>
+    <div class="toolbar proposal-actions"><button id="saveProposal">Guardar propuesta</button><button id="acceptProposal" class="secondary">Cliente acepta</button><button id="copyProposal" class="secondary">Copiar texto cliente</button><button id="printProposal" class="secondary">Imprimir / guardar PDF</button></div>
+    <div id="proposalInternal" class="proposal-internal"></div>
+
+    <div class="seller-payment-box">
+      <h3>Pago del vehículo · directo al vendedor</h3>
+      <p class="muted">Este dinero lo paga el cliente al vendedor alemán. Se registra para seguimiento, pero <b>no cuenta como dinero recibido por ti</b>.</p>
+      <div class="grid compact">
+        <div><label>Vendedor</label><input id="sellerPayName" placeholder="Concesionario / particular"></div>
+        <div><label>Importe vehículo</label><input id="sellerPayAmount" type="number"></div>
+        <div><label>Estado</label><select id="sellerPayStatus"></select></div>
+        <div><label>Fecha</label><input id="sellerPayDate" type="date"></div>
+        <div class="wide"><label>Referencia / observación</label><input id="sellerPayReference" placeholder="Ej. transferencia ordenada, factura DE-123..."></div>
+      </div>
+      <div class="grid compact"><div class="wide"><label>Justificante (solo se guarda el nombre en esta demo local)</label><input id="sellerPayProof" type="file" accept="image/*,.pdf"></div></div>
+      <div class="toolbar"><button id="saveSellerPayment" class="secondary">Guardar pago al vendedor</button></div>
+      <div id="sellerPaymentSummary"></div>
+    </div>
+
+    <div class="payment-box v14-payments">
+      <div class="section-head mini-head"><div><h3>Plan de cobros a tu intermediación</h3><p class="muted">Reserva, gastos gestionados y comisión quedan separados. El precio del coche pagado al vendedor nunca entra en tus cobros.</p></div><span class="status-pill pending">Pago online: inhabilitado · WhatsApp activo</span></div>
+      <div id="paymentDashboard" class="proposal-internal"></div>
+      <div class="whatsapp-reservation-box">
+        <h4>Reserva inicial por WhatsApp</h4>
+        <p class="muted">Mientras el pago online esté inhabilitado, el cliente inicia la reserva por WhatsApp. Tú confirmas las condiciones y, cuando recibas la señal por el método acordado, la registras manualmente aquí.</p>
+        <div class="grid compact">
+          <div class="wide"><label>Tu WhatsApp de reservas</label><input id="reservationWhatsApp" inputmode="tel" placeholder="Ej. 34600111222"></div>
+        </div>
+        <div class="toolbar"><button id="saveReservationWhatsApp" class="secondary">Guardar WhatsApp</button><button id="reservationWhatsAppBtn" class="whatsapp-btn">Reservar por WhatsApp</button><button id="futureGateway" class="secondary" disabled>Pago online · inhabilitado</button></div>
+        <p id="whatsappStatus" class="micro"></p>
+      </div>
+      <div class="toolbar"><button id="buildPaymentPlan">Crear / actualizar plan automático</button><button id="registerDeposit" class="secondary">Registrar señal recibida</button></div>
+      <div id="paymentSchedule"></div>
+      <h4>Registrar cobro recibido</h4>
+      <div class="grid compact">
+        <div><label>Aplicar a</label><select id="paymentCharge"></select></div>
+        <div><label>Importe recibido</label><input id="paymentAmount" type="number"></div>
+        <div><label>Método</label><select id="paymentMethod"><option>Transferencia bancaria</option><option>Reserva coordinada por WhatsApp</option><option>Otro</option></select></div>
+        <div><label>Fecha</label><input id="paymentDate" type="date"></div>
+        <div class="wide"><label>Referencia / justificante</label><input id="paymentReference" placeholder="Ej. transferencia 1234, operación bancaria..."></div>
+      </div>
+      <div class="toolbar"><button id="addPayment">Registrar cobro</button></div>
+      <div id="paymentList"></div>
+    </div>
+
+    <div id="clientProposal" class="client-proposal"></div>
+  </section>
+
+  <section class="panel contract-panel" id="contractPanel">
+    <div class="section-head">
+      <div><h2>4. Contrato de encargo y aceptación</h2><p class="muted">Borrador operativo para documentar el encargo antes de la reserva. No sustituye una revisión jurídica profesional.</p></div>
+      <span id="contractStatusPill" class="status-pill pending">Borrador</span>
+    </div>
+    <div class="contract-warning"><b>Prelanzamiento:</b> completa tus datos profesionales y revisa las condiciones de cancelación antes de utilizar este contrato con clientes reales.</div>
+    <div class="grid contract-grid">
+      <div><label>Nombre legal / profesional</label><input id="contractProviderName" placeholder="Tu nombre o denominación"></div>
+      <div><label>NIF / CIF</label><input id="contractProviderTaxId" placeholder="NIF/CIF"></div>
+      <div class="wide"><label>Domicilio profesional</label><input id="contractProviderAddress" placeholder="Dirección profesional"></div>
+      <div class="wide"><label>Email profesional</label><input id="contractProviderEmail" type="email" placeholder="correo@dominio.es"></div>
+      <div><label>Cliente</label><input id="contractClientName"></div>
+      <div><label>DNI/NIE/Pasaporte</label><input id="contractClientId" placeholder="Documento del cliente"></div>
+      <div class="wide"><label>Domicilio del cliente</label><input id="contractClientAddress" placeholder="Dirección del cliente"></div>
+      <div class="wide"><label>Objeto del encargo</label><textarea id="contractScope" rows="3"></textarea></div>
+      <div class="wide"><label>Pago directo del vehículo</label><textarea id="contractDirectPayment" rows="3"></textarea></div>
+      <div class="wide"><label>Costes estimados y variaciones</label><textarea id="contractEstimateClause" rows="3"></textarea></div>
+      <div class="wide"><label>Disponibilidad del vehículo</label><textarea id="contractAvailabilityClause" rows="3"></textarea></div>
+      <div class="wide"><label>Cancelación y devolución de la reserva <span class="required">obligatorio antes de aceptar</span></label><textarea id="contractCancellation" rows="4" placeholder="Define aquí las condiciones revisadas que aplicarás a la reserva y cancelación."></textarea></div>
+      <div class="wide"><label>Condiciones adicionales</label><textarea id="contractExtraTerms" rows="3" placeholder="Opcional"></textarea></div>
+    </div>
+    <div id="contractEconomics" class="contract-economics"></div>
+    <div class="contract-checks">
+      <label><input type="checkbox" id="contractCheckScope"> El cliente declara haber leído y aceptar el alcance del servicio.</label>
+      <label><input type="checkbox" id="contractCheckDirect"> El cliente entiende que paga el vehículo directamente al vendedor.</label>
+      <label><input type="checkbox" id="contractCheckEstimate"> El cliente entiende que ciertos costes externos son estimaciones hasta su confirmación.</label>
+      <label><input type="checkbox" id="contractCheckCancellation"> El cliente acepta las condiciones de cancelación y devolución indicadas arriba.</label>
+    </div>
+    <div class="grid compact">
+      <div class="wide"><label>Nombre completo para aceptación</label><input id="contractSignerName" placeholder="Nombre completo del cliente"></div>
+    </div>
+    <div class="toolbar contract-actions">
+      <button id="saveContract" class="secondary">Guardar borrador</button>
+      <button id="acceptContractBtn">Aceptar contrato</button>
+      <button id="copyContract" class="secondary">Copiar contrato</button>
+      <button id="printContract" class="secondary">Imprimir / guardar PDF</button>
+      <button id="resetContractAcceptance" class="secondary">Anular aceptación</button>
+    </div>
+    <div id="contractReadiness" class="contract-readiness"></div>
+    <p class="micro">La aceptación de esta versión local registra nombre, fecha, referencia y contenido aceptado, pero no pretende sustituir una firma electrónica cualificada ni asesoramiento jurídico.</p>
+    <div id="contractPrint" class="contract-print"></div>
+  </section>
+
+  <section class="panel history-panel">
+    <div class="section-head"><div><h2>Historial VIN</h2><p class="muted">Preparado para carVertical y autoDNA. Las consultas reales pasarán por backend.</p></div><span class="status-pill pending">API preparada</span></div>
+    <div id="historyProviders" class="source-grid"></div>
+    <div class="grid" style="margin-top:14px">
+      <div><label>Vehículo</label><select id="historyCar"></select></div>
+      <div><label>Proveedor</label><select id="historyProvider"><option value="demo_history">Historial DEMO</option><option value="carvertical" disabled>carVertical · requiere acceso B2B</option><option value="autodna" disabled>autoDNA · requiere acceso partner</option></select></div>
+      <div><label>VIN</label><input id="historyVin" maxlength="17" placeholder="17 caracteres"></div>
+    </div>
+    <div class="toolbar"><button id="runHistoryDemo">Generar informe DEMO</button><button id="clearHistory" class="secondary">Borrar informe</button></div>
+    <div id="historyResult" class="history-result"></div>
+  </section>
+
+  <section class="panel verify-panel">
+    <div class="section-head"><div><h2>Verificación previa a compra</h2><p class="muted">La comprobación del coche modifica riesgo, reserva y coste final.</p></div><span class="status-pill pending">Checklist manual</span></div>
+    <div class="grid">
+      <div><label>Vehículo</label><select id="verifyCar"></select></div>
+      <div><label>VIN</label><input id="verifyVin" maxlength="17" placeholder="17 caracteres"></div>
+      <div><label>Documentación original</label><select id="verifyRegistration"><option value="unknown">Sin comprobar</option><option value="yes">Sí</option><option value="no">No</option></select></div>
+      <div><label>Factura / contrato</label><select id="verifyOwnership"><option value="unknown">Sin comprobar</option><option value="yes">Sí</option><option value="no">No</option></select></div>
+      <div><label>CoC / documentación técnica</label><select id="verifyTechnical"><option value="unknown">Sin comprobar</option><option value="yes">Sí</option><option value="no">No</option></select></div>
+      <div><label>HU/TÜV</label><select id="verifyRoadworthiness"><option value="unknown">Sin comprobar</option><option value="valid">En vigor</option><option value="expired">Caducada</option></select></div>
+      <div><label>Mantenimiento</label><select id="verifyService"><option value="unknown">Sin comprobar</option><option value="full">Completo</option><option value="partial">Parcial</option><option value="none">No disponible</option></select></div>
+      <div><label>Accidentes</label><select id="verifyAccident"><option value="unknown">Sin comprobar</option><option value="none">Sin accidentes declarados</option><option value="repaired">Accidente/reparación declarada</option></select></div>
+      <div><label>Inspección independiente</label><select id="verifyInspection"><option value="not_done">No realizada</option><option value="pass">Superada</option><option value="issues">Con incidencias</option></select></div>
+      <div><label>Kilometraje coherente</label><select id="verifyMileage"><option value="unknown">Sin comprobar</option><option value="yes">Sí</option><option value="no">No</option></select></div>
+      <div><label>Vendedor comprobado</label><select id="verifySeller"><option value="unknown">Sin comprobar</option><option value="yes">Sí</option><option value="no">No</option></select></div>
+      <div><label>Modificaciones relevantes</label><select id="verifyModified"><option value="unknown">Sin comprobar</option><option value="no">No</option><option value="yes">Sí</option></select></div>
+    </div>
+    <div class="toolbar"><button id="saveVerification">Guardar y recalcular</button><button id="clearVerification" class="secondary">Borrar comprobación</button></div>
+    <div id="verificationResult" class="verification-result"></div>
+  </section>
+
+  <section class="panel costs-config">
+    <div class="section-head"><div><h2>Costes por defecto</h2><p class="muted">Se incluyen antes de calcular tu beneficio.</p></div><button id="resetCosts" class="secondary smallbtn">Restablecer</button></div>
+    <div class="grid compact">
+      <div><label>Transporte</label><input id="cfgTransport" type="number" value="750"></div>
+      <div><label>ITV importación</label><input id="cfgItv" type="number" value="180"></div>
+      <div><label>DGT matriculación</label><input id="cfgDgt" type="number" value="99.77"></div>
+      <div><label>CoC / ficha reducida</label><input id="cfgHomologation" type="number" value="100"></div>
+      <div><label>Placas</label><input id="cfgPlates" type="number" value="30"></div>
+      <div><label>IVTM municipal</label><input id="cfgMunicipal" type="number" value="120"></div>
+      <div><label>Gestoría</label><input id="cfgRegistration" type="number" value="150"></div>
+      <div><label>Preparación</label><input id="cfgPrep" type="number" value="550"></div>
+      <div><label>Colchón de riesgo base</label><input id="cfgRisk" type="number" value="500"></div>
+    </div>
+  </section>
+
+  <section class="panel tax-calculator">
+    <div class="section-head"><div><h2>Calculadora auxiliar de importación</h2><p class="muted">Para comprobar un caso manualmente.</p></div><span class="status-pill live">España / Bizkaia</span></div>
+    <div class="grid compact">
+      <div><label>Precio compra</label><input id="taxPurchase" type="number" value="18000"></div>
+      <div><label>Base fiscal</label><input id="taxBase" type="number" value="18000"></div>
+      <div><label>CO₂ (g/km)</label><input id="taxCo2" type="number" value="135"></div>
+      <div><label>Vendedor</label><select id="taxSeller"><option value="professional" selected>Profesional</option><option value="private">Particular</option></select></div>
+      <div><label>Situación fiscal</label><select id="taxStatus"><option value="used" selected>Usado</option><option value="new">Nuevo a efectos fiscales</option></select></div>
+      <div><label>Fiscalidad</label><select id="taxRegion"><option value="ES_BI">Bizkaia</option></select></div>
+    </div>
+    <div id="taxResult" class="tax-result"></div>
+  </section>
+
+  <section class="panel notice">
+    <b>V20 reconoce automáticamente al administrador</b>
+    <p class="muted">Tu cuenta admin entra al panel interno automáticamente. Si quieres revisar el simulador público mientras mantienes tu sesión, usa el botón “Ver simulador público”.</p>
+  </section>
+</div>
+<script src="crm-engine.js"></script>
+<script src="source-registry.js"></script>
+<script src="provider-layer.js"></script>
+<script src="import-calculator.js"></script>
+<script src="verification-engine.js"></script>
+<script src="history-engine.js"></script>
+<script src="risk-engine.js"></script>
+<script src="order-engine.js"></script>
+<script src="proposal-engine.js"></script>
+<script src="payment-engine.js"></script>
+<script src="contract-engine.js"></script>
+<script src="app.js" defer></script>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="js/cloud.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/admin-cloud.js" defer></script>
+</body>
+</html>

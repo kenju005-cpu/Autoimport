@@ -1,0 +1,11 @@
+(function(){
+ const CRM_KEY='autoimport-v14-crm', ACTIVE_KEY='autoimport-v18-active-record';
+ const $=id=>document.getElementById(id);
+ function records(){try{return JSON.parse(localStorage.getItem(CRM_KEY)||'[]')||[]}catch{return []}}
+ function setStatus(msg,cls=''){const e=$('cloudSyncStatus');if(e){e.className='micro '+cls;e.textContent=msg}}
+ function merge(localRows,remoteRows){const map=new Map();[...localRows,...remoteRows].forEach(r=>{const prev=map.get(r.id);if(!prev||String(r.updatedAt||'')>String(prev.updatedAt||''))map.set(r.id,r)});return [...map.values()]}
+ async function syncAll(){if(!window.AutoImportCloud.enabled){setStatus('Nube no configurada.','warn');return}const rows=records();setStatus(`Sincronizando ${rows.length} encargo(s)…`);try{for(const r of rows)await window.AutoImportCloud.syncCrmRecord(r);setStatus('Nube sincronizada ✓','good')}catch(e){setStatus('Error: '+e.message,'bad')}}
+ async function pull(){if(!window.AutoImportCloud.enabled){setStatus('Nube no configurada.','warn');return}try{const remote=await window.AutoImportCloud.adminWorkspaceRecords();const all=merge(records(),remote);localStorage.setItem(CRM_KEY,JSON.stringify(all));setStatus(`Cargados ${remote.length} registro(s) de nube. Recargando…`,'good');setTimeout(()=>location.reload(),500)}catch(e){setStatus('Error: '+e.message,'bad')}}
+ async function upload(){const f=$('cloudDocumentFile')?.files?.[0],id=localStorage.getItem(ACTIVE_KEY);if(!f){setStatus('Selecciona un archivo.','warn');return}if(!id){setStatus('Abre o guarda primero un encargo.','warn');return}try{setStatus('Subiendo documento…');await window.AutoImportCloud.uploadOrderDocument(id,f,$('cloudDocumentKind').value,$('cloudDocumentVisible').checked);setStatus('Documento subido ✓','good');$('cloudDocumentFile').value=''}catch(e){setStatus('Error: '+e.message,'bad')}}
+ window.addEventListener('DOMContentLoaded',()=>{$('cloudSyncPush')?.addEventListener('click',syncAll);$('cloudSyncPull')?.addEventListener('click',pull);$('cloudDocumentUpload')?.addEventListener('click',upload);setStatus(window.AutoImportCloud.enabled?'Nube configurada. Los guardados se sincronizan automáticamente.':'Modo local. Añade las credenciales de Supabase para activar la nube.');});
+})();
