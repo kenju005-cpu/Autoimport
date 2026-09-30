@@ -251,7 +251,24 @@ function saveOrderRecord(showFeedback=true){
  const c=proposalCar();if(c)proposalState=normalizeProposal(proposalRawFromForm(),c,currentOrder());
  if($('contractPanel')){contractState=currentContract();contractSettings={providerName:contractState.providerName,providerTaxId:contractState.providerTaxId,providerAddress:contractState.providerAddress,providerEmail:contractState.providerEmail};localStorage.setItem(CONTRACT_KEY,JSON.stringify(contractState));localStorage.setItem(CONTRACT_SETTINGS_KEY,JSON.stringify(contractSettings));}
  const rec=normalizeCrmRecord({id:activeRecordId||undefined,createdAt:crmRecords.find(x=>x.id===activeRecordId)?.createdAt,order:currentOrder(),proposal:proposalState,contract:contractState,selectedCarId:proposalState.carId||''});
- activeRecordId=rec.id;const i=crmRecords.findIndex(x=>x.id===rec.id);if(i>=0)crmRecords[i]=rec;else crmRecords.push(rec);persistCrm();localStorage.setItem('autoimport-v18-active-record',rec.id);saveAll();renderCrm();if(window.AutoImportCloud?.enabled){window.AutoImportCloud.syncCrmRecord(rec).then(()=>{const e=$('cloudSyncStatus');if(e){e.textContent='Encargo guardado local + nube ✓';e.className='micro good'}}).catch(err=>{const e=$('cloudSyncStatus');if(e){e.textContent='Guardado local; nube: '+err.message;e.className='micro warn'}})}if(showFeedback){const b=$('saveOrderRecord');b.textContent='Guardado ✓';setTimeout(()=>b.textContent='Guardar / actualizar ficha',1000)}
+ activeRecordId=rec.id;const i=crmRecords.findIndex(x=>x.id===rec.id);if(i>=0)crmRecords[i]=rec;else crmRecords.push(rec);persistCrm();localStorage.setItem('autoimport-v18-active-record',rec.id);saveAll();renderCrm();
+ const flash=(label='Guardado ✓')=>{
+   if(!showFeedback)return;
+   const topBtn=$('saveOrderRecord'),formBtn=$('saveOrder');
+   if(topBtn)topBtn.textContent=label;
+   if(formBtn)formBtn.textContent=label;
+   setTimeout(()=>{if(topBtn)topBtn.textContent='Guardar / actualizar ficha';if(formBtn)formBtn.textContent='Guardar encargo'},1400);
+ };
+ flash();
+ if(window.AutoImportCloud?.enabled){
+   window.AutoImportCloud.syncCrmRecord(rec).then(()=>{
+     const e=$('cloudSyncStatus');if(e){e.textContent='Encargo guardado local + nube ✓';e.className='micro good'}
+   }).catch(err=>{
+     const e=$('cloudSyncStatus');if(e){e.textContent='Guardado local; nube: '+err.message;e.className='micro warn'}
+     if(showFeedback){const formBtn=$('saveOrder');if(formBtn)formBtn.textContent='Guardado local ✓'}
+   })
+ }
+ return rec;
 }
 function loadOrderRecord(id){
  const r=crmRecords.find(x=>x.id===id);if(!r)return;activeRecordId=id;localStorage.setItem('autoimport-v18-active-record',id);applyOrderToForm(r.order||{});proposalState=r.proposal||{payments:[],paymentPlan:[],sellerPayment:{}};contractState=r.contract||{};localStorage.setItem(PROPOSAL_KEY,JSON.stringify(proposalState));localStorage.setItem(CONTRACT_KEY,JSON.stringify(contractState));renderWorkflow();searchCars();loadContractIntoForm(contractState);renderCrm();window.scrollTo({top:0,behavior:'smooth'});
@@ -261,6 +278,8 @@ function deleteOrderRecord(id){crmRecords=crmRecords.filter(x=>x.id!==id);if(act
 window.deleteOrderRecord=deleteOrderRecord;
 function newOrderRecord(){
  activeRecordId='';proposalState={payments:[],paymentPlan:[],sellerPayment:{}};contractState={};localStorage.setItem(CONTRACT_KEY,'{}');applyOrderToForm({client:'',phone:'',email:'',reference:'',query:'Audi A5',budget:25000,minProfit:1500,targetProfit:2500,operationBuffer:400,minYear:2018,maxKm:140000,fuel:'',gear:'',body:'',seller:'',maxRisk:2,equipment:'',internalNotes:'',status:ORDER_STAGES[0]});localStorage.setItem(PROPOSAL_KEY,JSON.stringify(proposalState));renderWorkflow();searchCars();loadContractIntoForm(contractState);renderCrm();
+ const panel=document.querySelector('.order-panel');if(panel)panel.scrollIntoView({behavior:'smooth',block:'start'});
+ setTimeout(()=>{$('orderClient')?.focus()},450);
 }
 document.addEventListener('DOMContentLoaded',()=>{
  $('orderStatus').innerHTML=ORDER_STAGES.map(s=>`<option>${s}</option>`).join('');loadSaved();renderWorkflow();renderSources();initHistory();initVerification();initProposal();initContract();renderCrm();
