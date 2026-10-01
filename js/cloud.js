@@ -18,16 +18,34 @@
   async function profile(){if(!client)return {role:'admin',full_name:'Modo local'};const u=await currentUser();if(!u)return null;const {data,error}=await client.from('profiles').select('id,role,full_name,email').eq('id',u.id).maybeSingle();if(error)throw error;return data}
   async function requireRole(allowed){const u=await currentUser();if(!u)return {ok:false,reason:'signed_out',user:null,profile:null};const p=await profile();return p&&allowed.includes(p.role)?{ok:true,user:u,profile:p}:{ok:false,reason:'forbidden',user:u,profile:p}}
   async function signIn(email,password){if(!client)throw new Error('Nube no configurada');return client.auth.signInWithPassword({email,password})}
-  async function signUpClient(email,password,fullName){if(!client)throw new Error('Nube no configurada');return client.auth.signUp({email,password,options:{data:{full_name:String(fullName||'').trim()}}})}
+  async function signUpClient(email,password,fullName,phone,whatsappConsent=false){if(!client)throw new Error('Nube no configurada');return client.auth.signUp({email,password,options:{data:{full_name:String(fullName||'').trim(),phone:String(phone||'').trim(),whatsapp_contact_consent:!!whatsappConsent}}})}
   async function resetPassword(email){if(!client)throw new Error('Nube no configurada');const base=cfg.appBaseUrl||location.origin+location.pathname.replace(/[^/]+$/,'');return client.auth.resetPasswordForEmail(email,{redirectTo:base+'client.html'})}
   async function signOut(){if(client)await client.auth.signOut()}
 
+  async function myClientProfile(){
+    if(!client)return null;
+    const u=await currentUser();if(!u)return null;
+    const {data,error}=await client.from('clients').select('id,auth_user_id,full_name,email,phone,whatsapp_contact_consent,whatsapp_consent_at').eq('auth_user_id',u.id).maybeSingle();
+    if(error)throw error;return data;
+  }
   async function createLead(payload){
     if(!client){const rows=JSON.parse(localStorage.getItem(LOCAL_LEADS)||'[]');const row={...payload,id:'local-'+Date.now(),created_at:new Date().toISOString()};rows.unshift(row);localStorage.setItem(LOCAL_LEADS,JSON.stringify(rows));return row}
+    const u=await currentUser();if(!u)throw new Error('Inicia sesión para enviar la solicitud.');
+    const me=await myClientProfile();
     const vehicle=String(payload.vehicle||'').trim();
     const parts=vehicle.split(/\s+/).filter(Boolean);
-    const clean={full_name:String(payload.name||'').trim()||null,email:String(payload.email||'').trim().toLowerCase()||null,phone:String(payload.phone||'').trim()||null,requested_make:parts[0]||null,requested_model:parts.slice(1).join(' ')||null,max_budget:Number(payload.budget)||null,message:[payload.min_year?`Año mínimo: ${payload.min_year}`:'',payload.max_km?`Km máximos: ${payload.max_km}`:''].filter(Boolean).join(' · ')||null,source:'public_simulator',status:'new'};
+    const extras=[payload.min_year?`Año mínimo: ${payload.min_year}`:'',payload.max_km?`Km máximos: ${payload.max_km}`:'',payload.message||''].filter(Boolean).join(' · ');
+    const clean={auth_user_id:u.id,full_name:String(payload.name||me?.full_name||'').trim()||null,email:String(payload.email||me?.email||u.email||'').trim().toLowerCase()||null,phone:String(payload.phone||me?.phone||'').trim()||null,requested_make:parts[0]||null,requested_model:parts.slice(1).join(' ')||null,max_budget:Number(payload.budget)||null,message:extras||null,source:String(payload.source||'public_simulator'),status:'new',whatsapp_contact_consent:!!(payload.whatsapp_contact_consent??me?.whatsapp_contact_consent),vehicle_snapshot:payload.vehicle_snapshot||null};
     const {data,error}=await client.from('inquiries').insert(clean).select('*').single();if(error)throw error;return data;
+  }
+  function favoritePayload(vehicle,u){
+    const v=vehicle||{}, listingKey=String(v.listing_key||v.id||v.external_listing_id||'').trim();
+    if(!listingKey)throw new Error('El vehículo no tiene identificador.');
+    return {auth_user_id:u.id,listing_key:listingKey,source_platform:v.source_platform||v.provider||null,source_country:v.source_country||'DE',external_listing_id:v.external_listing_id||v.id||null,original_url:v.original_url||v.url||null,make:v.make||null,model:v.model||null,version:v.version||null,year:Number(v.year)||null,mileage:Number(v.mileage??v.km)||null,price_origin:Number(v.price_origin??v.price)||null,image_url:v.image_url||null,snapshot:v};
+  }
+  async function saveFavorite(vehicle){if(!client)throw new Error('Nube no configurada');const u=await currentUser();if(!u)throw new Error('Inicia sesión para guardar coches.');const row=favoritePayload(vehicle,u);const {data,error}=await client.from('favorites').upsert(row,{onConflict:'auth_user_id,listing_key'}).select('*').single();if(error)throw error;return data}
+  async function removeFavorite(listingKey){if(!client)throw new Error('Nube no configurada');const u=await currentUser();if(!u)throw new Error('Inicia sesión.');const {error}=await client.from('favorites').delete().eq('auth_user_id',u.id).eq('listing_key',String(listingKey));if(error)throw error}
+  async function myFavorites(){if(!client)return [];const u=await currentUser();if(!u)return [];const {data,error}=await client.from('favorites').select('*').eq('auth_user_id',u.id).order('created_at',{ascending:false});if(error)throw error;return data||[]}
   }
   async function linkMyOrders(){return 0}
 
@@ -103,5 +121,5 @@
   async function clientDocumentUrl(documentId){if(!client)throw new Error('Nube no configurada');const {data,error}=await client.from('documents').select('storage_path').eq('id',documentId).maybeSingle();if(error)throw error;if(!data)throw new Error('Documento no disponible');const {data:signed,error:se}=await client.storage.from(bucket).createSignedUrl(data.storage_path,300);if(se)throw se;return signed.signedUrl}
   async function downloadDocument(path){if(!client)throw new Error('Nube no configurada');const {data,error}=await client.storage.from(bucket).createSignedUrl(path,300);if(error)throw error;return data?.signedUrl}
 
-  window.AutoImportCloud={enabled,client,mode:enabled?'cloud':'local',currentUser,session,profile,requireRole,signIn,signUpClient,resetPassword,signOut,createLead,linkMyOrders,clientDashboard,myOrders,myOrderBundle,adminLeads,adminWorkspaceRecords,deleteWorkspaceRecord,syncCrmRecord,uploadOrderDocument,clientDocumentUrl,downloadDocument};
+  window.AutoImportCloud={enabled,client,mode:enabled?'cloud':'local',currentUser,session,profile,requireRole,signIn,signUpClient,resetPassword,signOut,myClientProfile,createLead,saveFavorite,removeFavorite,myFavorites,linkMyOrders,clientDashboard,myOrders,myOrderBundle,adminLeads,adminWorkspaceRecords,deleteWorkspaceRecord,syncCrmRecord,uploadOrderDocument,clientDocumentUrl,downloadDocument};
 })();
