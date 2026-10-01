@@ -1,11 +1,21 @@
 (function(){
- const CRM_KEY='autoimport-v14-crm', ACTIVE_KEY='autoimport-v18-active-record';
- const $=id=>document.getElementById(id);
+ const CRM_KEY='autoimport-v14-crm',ACTIVE_KEY='autoimport-v18-active-record',$=id=>document.getElementById(id);
+ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  function records(){try{return JSON.parse(localStorage.getItem(CRM_KEY)||'[]')||[]}catch{return []}}
  function setStatus(msg,cls=''){const e=$('cloudSyncStatus');if(e){e.className='micro '+cls;e.textContent=msg}}
  function merge(localRows,remoteRows){const map=new Map();[...localRows,...remoteRows].forEach(r=>{const prev=map.get(r.id);if(!prev||String(r.updatedAt||'')>String(prev.updatedAt||''))map.set(r.id,r)});return [...map.values()]}
+ function waNumber(v){let x=String(v||'').replace(/\D/g,'');if(x.length===9)x='34'+x;return x}
+ async function loadLeads(){
+  const root=$('leadList');if(!root||!window.AutoImportCloud.enabled)return;
+  try{
+   const rows=await window.AutoImportCloud.adminLeads(),withPhone=rows.filter(x=>waNumber(x.phone)).length;
+   if($('leadSummary'))$('leadSummary').innerHTML=`<div class="kpi"><span class="muted">Solicitudes</span><b>${rows.length}</b></div><div class="kpi"><span class="muted">Con WhatsApp</span><b>${withPhone}</b></div><div class="kpi"><span class="muted">Nuevas</span><b>${rows.filter(x=>x.status==='new').length}</b></div>`;
+   root.innerHTML=rows.map(x=>{const phone=waNumber(x.phone),msg=encodeURIComponent(`Hola ${x.name||''}, hemos recibido tu solicitud sobre ${x.vehicle||'tu búsqueda de coche'}. Te escribimos para concretar presupuesto y preferencias.`);return `<div class="crm-row"><div><b>${esc(x.name||'Cliente')}</b><span>${esc(x.vehicle||'Vehículo por definir')} · ${esc(x.source||'web')}</span></div><div><span>Presupuesto</span><b>${x.budget?Number(x.budget).toLocaleString('es-ES')+' €':'Por concretar'}</b></div><div><span>WhatsApp</span><b>${esc(x.phone||'No indicado')}</b></div><div class="crm-actions">${phone?`<a class="secondary" style="text-decoration:none;padding:9px 12px;border-radius:9px" target="_blank" rel="noopener" href="https://wa.me/${phone}?text=${msg}">Contactar por WhatsApp</a>`:'<span class="muted">Sin teléfono</span>'}</div></div>`}).join('')||'<p class="muted">Todavía no hay solicitudes de clientes.</p>'
+  }catch(e){root.innerHTML='<p class="bad">No se pudieron cargar los interesados: '+esc(e.message)+'</p>'}
+ }
  async function syncAll(){if(!window.AutoImportCloud.enabled){setStatus('Nube no configurada.','warn');return}const rows=records();setStatus(`Sincronizando ${rows.length} encargo(s)…`);try{for(const r of rows)await window.AutoImportCloud.syncCrmRecord(r);setStatus('Nube sincronizada ✓','good')}catch(e){setStatus('Error: '+e.message,'bad')}}
- async function pull(){if(!window.AutoImportCloud.enabled){setStatus('Nube no configurada.','warn');return}try{const remote=await window.AutoImportCloud.adminWorkspaceRecords();const all=merge(records(),remote);localStorage.setItem(CRM_KEY,JSON.stringify(all));setStatus(`Cargados ${remote.length} registro(s) de nube. Recargando…`,'good');setTimeout(()=>location.reload(),500)}catch(e){setStatus('Error: '+e.message,'bad')}}
+ async function pull(){if(!window.AutoImportCloud.enabled){setStatus('Nube no configurada.','warn');return}try{const remote=await window.AutoImportCloud.adminWorkspaceRecords(),all=merge(records(),remote);localStorage.setItem(CRM_KEY,JSON.stringify(all));setStatus(`Cargados ${remote.length} registro(s) de nube. Recargando…`,'good');setTimeout(()=>location.reload(),500)}catch(e){setStatus('Error: '+e.message,'bad')}}
  async function upload(){const f=$('cloudDocumentFile')?.files?.[0],id=localStorage.getItem(ACTIVE_KEY);if(!f){setStatus('Selecciona un archivo.','warn');return}if(!id){setStatus('Abre o guarda primero un encargo.','warn');return}try{setStatus('Subiendo documento…');await window.AutoImportCloud.uploadOrderDocument(id,f,$('cloudDocumentKind').value,$('cloudDocumentVisible').checked);setStatus('Documento subido ✓','good');$('cloudDocumentFile').value=''}catch(e){setStatus('Error: '+e.message,'bad')}}
- window.addEventListener('DOMContentLoaded',()=>{$('cloudSyncPush')?.addEventListener('click',syncAll);$('cloudSyncPull')?.addEventListener('click',pull);$('cloudDocumentUpload')?.addEventListener('click',upload);setStatus(window.AutoImportCloud.enabled?'Nube configurada. Los guardados se sincronizan automáticamente.':'Modo local. Añade las credenciales de Supabase para activar la nube.');});
+ window.addEventListener('autoimport:authorized',()=>loadLeads());
+ window.addEventListener('DOMContentLoaded',()=>{$('cloudSyncPush')?.addEventListener('click',syncAll);$('cloudSyncPull')?.addEventListener('click',pull);$('cloudDocumentUpload')?.addEventListener('click',upload);$('refreshLeads')?.addEventListener('click',loadLeads);setStatus(window.AutoImportCloud.enabled?'Nube configurada. Los guardados se sincronizan automáticamente.':'Modo local. Añade las credenciales de Supabase para activar la nube.')});
 })();
