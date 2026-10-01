@@ -1,5 +1,5 @@
-const CACHE='autoimport-v18-shell-v2';
-const ASSETS=['./','./index.html','./client.html','./admin.html','./setup.html','./styles.css','./config.js','./js/cloud.js','./js/auth.js','./js/public-estimator.js','./js/client-portal.js','./js/admin-cloud.js'];
+const CACHE='autoimport-v21-shell-v1';
+const ASSETS=['./','./index.html','./client.html','./admin.html','./setup.html','./styles.css','./config.js','./js/cloud.js','./js/auth.js','./js/public-estimator.js','./js/public-market.js','./js/client-portal.js','./js/admin-cloud.js'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).catch(()=>{})));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k))))));
 self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWith(fetch(e.request).then(r=>{const copy=r.clone();caches.open(CACHE).then(c=>c.put(e.request,copy)).catch(()=>{});return r}).catch(()=>caches.match(e.request)))});
