@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#0b0f14">
-<title>Proyecto importación · V20 · Panel interno</title>
+<title>Proyecto importación · V21 · Panel interno</title>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body data-auth-page="admin">
@@ -16,14 +16,14 @@
       <h1>Vehículos por encargo</h1>
       <p>El cliente pide un coche, validamos presupuesto y riesgo, protegemos tu beneficio y generamos una propuesta profesional con señal, pagos y seguimiento.</p>
     </div>
-    <div class="badge">V20 · Admin inteligente + nube real</div>
+    <div class="badge">V21 · Admin inteligente + nube real</div>
   </header>
 
 
   <section class="panel crm-panel">
     <div class="section-head">
       <div><h2>Panel de clientes y encargos</h2><p class="muted">Gestiona varios encargos a la vez. Cada ficha guarda cliente, búsqueda, propuesta, pagos y estado.</p></div>
-      <span class="status-pill live">V20 · CRM + nube real</span>
+      <span class="status-pill live">V21 · CRM + nube real</span>
     </div>
     <div id="crmSummary" class="summary crm-summary"></div>
     <div class="toolbar">
@@ -34,8 +34,15 @@
     <div id="crmList" class="crm-list"></div>
   </section>
 
+  <section class="panel crm-panel">
+    <div class="section-head"><div><h2>Clientes interesados</h2><p class="muted">Solicitudes de presupuesto y búsquedas enviadas desde la web. El botón abre WhatsApp directamente.</p></div><span class="status-pill live">V21 · Leads</span></div>
+    <div id="leadSummary" class="summary crm-summary"></div>
+    <div class="toolbar"><button id="refreshLeads" class="secondary">Actualizar interesados</button></div>
+    <div id="leadList" class="crm-list"><p class="muted">Cargando interesados…</p></div>
+  </section>
+
   <section class="panel cloud-panel">
-    <div class="section-head"><div><h2>Nube y documentos</h2><p class="muted">Sincroniza los encargos con Supabase. Los documentos se guardan en un bucket privado.</p></div><span class="status-pill live">V20 · Supabase</span></div>
+    <div class="section-head"><div><h2>Nube y documentos</h2><p class="muted">Sincroniza los encargos con Supabase. Los documentos se guardan en un bucket privado.</p></div><span class="status-pill live">V21 · Supabase</span></div>
     <div class="toolbar"><button id="cloudSyncPush">Sincronizar a nube</button><button id="cloudSyncPull" class="secondary">Cargar desde nube</button></div>
     <div class="grid compact" style="margin-top:12px"><div><label>Tipo de documento</label><select id="cloudDocumentKind"><option value="contrato">Contrato</option><option value="pago">Justificante de pago</option><option value="vehiculo">Documentación vehículo</option><option value="vin">Informe VIN</option><option value="otro">Otro</option></select></div><div><label>Archivo</label><input id="cloudDocumentFile" type="file"></div><div><label>Visible para el cliente</label><label style="display:flex;gap:8px;align-items:center;margin-top:12px"><input id="cloudDocumentVisible" type="checkbox" style="width:auto"> Compartir con cliente</label></div></div>
     <div class="toolbar"><button id="cloudDocumentUpload" class="secondary">Subir documento al encargo abierto</button></div>
