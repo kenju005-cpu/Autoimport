@@ -46,7 +46,6 @@
   async function saveFavorite(vehicle){if(!client)throw new Error('Nube no configurada');const u=await currentUser();if(!u)throw new Error('Inicia sesión para guardar coches.');const row=favoritePayload(vehicle,u);const {data,error}=await client.from('favorites').upsert(row,{onConflict:'auth_user_id,listing_key'}).select('*').single();if(error)throw error;return data}
   async function removeFavorite(listingKey){if(!client)throw new Error('Nube no configurada');const u=await currentUser();if(!u)throw new Error('Inicia sesión.');const {error}=await client.from('favorites').delete().eq('auth_user_id',u.id).eq('listing_key',String(listingKey));if(error)throw error}
   async function myFavorites(){if(!client)return [];const u=await currentUser();if(!u)return [];const {data,error}=await client.from('favorites').select('*').eq('auth_user_id',u.id).order('created_at',{ascending:false});if(error)throw error;return data||[]}
-  }
   async function linkMyOrders(){return 0}
 
   function requestedVehicle(o){return [o.requested_make,o.requested_model,o.requested_version].filter(Boolean).join(' ')||'Vehículo por definir'}
